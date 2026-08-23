@@ -270,7 +270,7 @@ def _wear_mask(n, start, end, fade=4):
 
 def _build_schedule(n, seed, s_track, s_roll, s_crease):
     """Per-frame event lists + smooth noise arrays for the whole batch."""
-    rng = np.random.default_rng(int(seed) % (2**31))
+    rng = np.random.default_rng(int(seed))
 
     # ---- tracking error bands -------------------------------------------
     tracking = [[] for _ in range(n)]
@@ -572,7 +572,12 @@ def _process_frame(img, i, ctx):
         s = s_crease * float(ev["s"])
         if s <= 0.01:
             continue
-        key = (round(ev["px"], 4), round(ev["py"], 4), round(ev["width"], 5))
+        key = (
+            round(ev["px"], 4),
+            round(ev["py"], 4),
+            round(ev["theta"], 4),
+            round(ev["width"], 5),
+        )
         cached = ctx["crease_cache"].get(key)
         if cached is None:
             ys, xs = torch.meshgrid(
@@ -683,7 +688,7 @@ def _process_frame(img, i, ctx):
     # ---- ghosting / crosstalk --------------------------------------------------
     if s_ghost > 0.01 and i > 0:
         gs = int(max(1, round(prof["ghost_shift"] * sf)))
-        gh = torch.roll(ctx["prev"], shifts=gs, dims=2)
+        gh = F.pad(ctx["prev"], (gs, 0), mode="replicate")[:, :, :w]
         a = 0.45 * s_ghost
         img = img * (1.0 - a) + gh * a
     ctx["prev"] = img.clone()
@@ -829,7 +834,7 @@ class MiniMaxH3TapeFX:
 
         prof = FORMAT_PROFILES[format]
         pm = PRESET_MULT[preset]
-        seed = int(seed) % (2**31)
+        seed = int(seed)
         sf = max(h, w) / 640.0
 
         wear = _wear_mask(b, wear_start, wear_end)
