@@ -520,9 +520,12 @@ def _process_frame(img, i, ctx):
         if s > 0.30:
             rolled = True
             shift = int(ev["off"] * h) % h
+            d = int(ev["dir"])
             if shift:
-                img = torch.roll(img, shifts=-shift * int(ev["dir"]), dims=1)
-            bar_y = (h - shift) % h
+                img = torch.roll(img, shifts=-shift * d, dims=1)
+            # the tear sits where wrapped rows meet: bottom entry point for
+            # upward rolls, top entry point for downward ones
+            bar_y = shift if d < 0 else (h - shift) % h
             hb = max(2, int(h * (0.02 + 0.10 * min(1.0, s))))
             y1 = min(h, bar_y + hb)
             if y1 > bar_y:
