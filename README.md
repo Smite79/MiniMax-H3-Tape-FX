@@ -1,3 +1,7 @@
+---
+license: mit
+---
+
 # MiniMax-H3-Tape-FX
 
 **One node. Three dead formats. Infinite damage.**
